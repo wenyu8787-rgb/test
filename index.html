@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="zh-TW">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>數獨遊戲</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      height: 100%;
+      width: 100%;
+      overflow: auto;
+    }
+
+    html {
+      height: 100%;
+      width: 100%;
+    }
+
+    .game-wrapper {
+      min-height: 100%;
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .game-container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0 0 30px 0;
+      font-size: 48px;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .controls select,
+    .controls button {
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .controls select {
+      background: white;
+      border: 2px solid #e0e0e0;
+    }
+
+    .controls button {
+      color: white;
+    }
+
+    .btn-primary {
+      background: #4CAF50;
+    }
+
+    .btn-primary:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    }
+
+    .btn-secondary {
+      background: #2196F3;
+    }
+
+    .btn-secondary:hover {
+      background: #0b7dda;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+    }
+
+    .btn-check {
+      background: #FF9800;
+    }
+
+    .btn-check:hover {
+      background: #e68900;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+    }
+
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 10px;
+    }
+
+    .timer,
+    .difficulty-display {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .sudoku-grid {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 0;
+      background: #000;
+      border: 3px solid #000;
+      margin: 0 auto 20px;
+      max-width: 500px;
+      aspect-ratio: 1;
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      font-size: 24px;
+      font-weight: 600;
+      border: 1px solid #ddd;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .cell:hover:not(.fixed):not(.error) {
+      background: #e3f2fd;
+    }
+
+    .cell.fixed {
+      background: #f5f5f5;
+      cursor: default;
+      font-weight: 700;
+    }
+
+    .cell.selected {
+      background: #bbdefb;
+      border: 2px solid #2196F3;
+    }
+
+    .cell.error {
+      background: #ffebee;
+      color: #d32f2f;
+    }
+
+    .cell.correct {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .cell:nth-child(3n):not(:nth-child(9n)) {
+      border-right: 2px solid #000;
+    }
+
+    .cell:nth-child(n+19):nth-child(-n+27),
+    .cell:nth-child(n+46):nth-child(-n+54) {
+      border-bottom: 2px solid #000;
+    }
+
+    .number-pad {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .number-btn {
+      padding: 15px;
+      font-size: 20px;
+      font-weight: 600;
+      border: 2px solid #e0e0e0;
+      background: white;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .number-btn:hover {
+      background: #e3f2fd;
+      border-color: #2196F3;
+      transform: translateY(-2px);
+    }
+
+    .number-btn:active {
+      transform: translateY(0);
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 18px;
+      display: none;
+    }
+
+    .message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      display: block;
+    }
+
+    .message.info {
+      background: #e3f2fd;
+      color: #1565c0;
+      display: block;
+    }
+
+    @media (max-width: 600px) {
+      .game-container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 32px;
+      }
+
+      .cell {
+        font-size: 18px;
+      }
+
+      .number-btn {
+        padding: 12px;
+        font-size: 18px;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="game-wrapper">
+   <div class="game-container">
+    <h1 id="game-title">數獨遊戲</h1>
+    <div class="controls"><select id="difficulty"> <option value="easy">簡單</option> <option value="medium">中等</option> <option value="hard">困難</option> </select> <button id="new-game-btn" class="btn-primary">新遊戲</button> <button id="hint-btn" class="btn-secondary">提示</button> <button id="check-btn" class="btn-check">檢查答案</button>
+    </div>
+    <div class="info-bar">
+     <div class="difficulty-display" id="difficulty-display">
+      難度：簡單
+     </div>
+     <div class="timer" id="timer">
+      時間：00:00
+     </div>
+    </div>
+    <div class="sudoku-grid" id="sudoku-grid"></div>
+    <div class="number-pad"><button class="number-btn" data-number="1">1</button> <button class="number-btn" data-number="2">2</button> <button class="number-btn" data-number="3">3</button> <button class="number-btn" data-number="4">4</button> <button class="number-btn" data-number="5">5</button> <button class="number-btn" data-number="6">6</button> <button class="number-btn" data-number="7">7</button> <button class="number-btn" data-number="8">8</button> <button class="number-btn" data-number="9">9</button> <button class="number-btn" data-number="0">清除</button>
+    </div>
+    <div class="message" id="message"></div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      background_color: "#667eea",
+      surface_color: "#ffffff",
+      text_color: "#000000",
+      primary_action_color: "#4CAF50",
+      secondary_action_color: "#2196F3",
+      font_family: "sans-serif",
+      font_size: 16,
+      game_title: "數獨遊戲",
+      new_game_button: "新遊戲",
+      hint_button: "提示",
+      check_button: "檢查答案"
+    };
+
+    let selectedCell = null;
+    let grid = [];
+    let solution = [];
+    let fixedCells = new Set();
+    let timerInterval = null;
+    let seconds = 0;
+
+    function generateSudoku(difficulty) {
+      const base = 3;
+      const side = base * base;
+      
+      function pattern(r, c) {
+        return (base * (r % base) + Math.floor(r / base) + c) % side;
+      }
+      
+      function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+      
+      const rows = [...Array(base)].map((_, i) => i * base);
+      const cols = [...Array(base)].map((_, i) => i * base);
+      const nums = shuffle([...Array(side)].map((_, i) => i + 1));
+      
+      const board = [];
+      for (let r = 0; r < side; r++) {
+        board[r] = [];
+        for (let c = 0; c < side; c++) {
+          board[r][c] = nums[pattern(r, c)];
+        }
+      }
+      
+      const squares = side * side;
+      let empties;
+      if (difficulty === 'easy') empties = Math.floor(squares * 0.4);
+      else if (difficulty === 'medium') empties = Math.floor(squares * 0.5);
+      else empties = Math.floor(squares * 0.6);
+      
+      const puzzle = board.map(row => [...row]);
+      const emptyCells = new Set();
+      
+      while (emptyCells.size < empties) {
+        const cell = Math.floor(Math.random() * squares);
+        emptyCells.add(cell);
+      }
+      
+      emptyCells.forEach(cell => {
+        const r = Math.floor(cell / side);
+        const c = cell % side;
+        puzzle[r][c] = 0;
+      });
+      
+      return { puzzle, solution: board };
+    }
+
+    function createGrid() {
+      const gridElement = document.getElementById('sudoku-grid');
+      gridElement.innerHTML = '';
+      
+      for (let i = 0; i < 81; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        
+        const row = Math.floor(i / 9);
+        const col = i % 9;
+        
+        // Ensure grid exists and has values
+        if (grid && grid[row] && grid[row][col] !== undefined) {
+          const value = grid[row][col];
+          
+          if (value !== 0) {
+            cell.textContent = value;
+            cell.classList.add('fixed');
+            fixedCells.add(i);
+          }
+        }
+        
+        cell.addEventListener('click', () => selectCell(i));
+        gridElement.appendChild(cell);
+      }
+    }
+
+    function selectCell(index) {
+      if (fixedCells.has(index)) return;
+      
+      const cells = document.querySelectorAll('.cell');
+      cells.forEach(c => c.classList.remove('selected'));
+      
+      selectedCell = index;
+      cells[index].classList.add('selected');
+    }
+
+    function setNumber(num) {
+      if (selectedCell === null) return;
+      if (fixedCells.has(selectedCell)) return;
+      
+      const row = Math.floor(selectedCell / 9);
+      const col = selectedCell % 9;
+      const cells = document.querySelectorAll('.cell');
+      
+      cells[selectedCell].classList.remove('error', 'correct');
+      
+      if (num === 0) {
+        grid[row][col] = 0;
+        cells[selectedCell].textContent = '';
+      } else {
+        grid[row][col] = num;
+        cells[selectedCell].textContent = num;
+      }
+    }
+
+    function checkSolution() {
+      const cells = document.querySelectorAll('.cell');
+      let correct = 0;
+      let total = 0;
+      
+      cells.forEach((cell, index) => {
+        if (fixedCells.has(index)) return;
+        
+        const row = Math.floor(index / 9);
+        const col = index % 9;
+        
+        if (grid[row][col] !== 0) {
+          total++;
+          cell.classList.remove('error', 'correct');
+          
+          if (grid[row][col] === solution[row][col]) {
+            cell.classList.add('correct');
+            correct++;
+          } else {
+            cell.classList.add('error');
+          }
+        }
+      });
+      
+      const messageEl = document.getElementById('message');
+      if (correct === total && total === 81 - fixedCells.size) {
+        messageEl.textContent = '🎉 恭喜！你完成了數獨！';
+        messageEl.className = 'message success';
+        stopTimer();
+      } else {
+        messageEl.textContent = `正確：${correct} / ${total}`;
+        messageEl.className = 'message info';
+        setTimeout(() => {
+          messageEl.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    function giveHint() {
+      const emptyCells = [];
+      for (let i = 0; i < 81; i++) {
+        if (!fixedCells.has(i)) {
+          const row = Math.floor(i / 9);
+          const col = i % 9;
+          if (grid[row][col] === 0) {
+            emptyCells.push(i);
+          }
+        }
+      }
+      
+      if (emptyCells.length === 0) return;
+      
+      const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      const row = Math.floor(randomIndex / 9);
+      const col = randomIndex % 9;
+      
+      grid[row][col] = solution[row][col];
+      const cells = document.querySelectorAll('.cell');
+      cells[randomIndex].textContent = solution[row][col];
+      cells[randomIndex].classList.add('correct');
+      
+      fixedCells.add(randomIndex);
+      cells[randomIndex].classList.add('fixed');
+    }
+
+    function startTimer() {
+      stopTimer();
+      seconds = 0;
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        seconds++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      document.getElementById('timer').textContent = 
+        `時間：${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function newGame() {
+      const difficulty = document.getElementById('difficulty').value;
+      const { puzzle, solution: sol } = generateSudoku(difficulty);
+      
+      grid = puzzle;
+      solution = sol;
+      fixedCells.clear();
+      selectedCell = null;
+      
+      const difficultyNames = { easy: '簡單', medium: '中等', hard: '困難' };
+      document.getElementById('difficulty-display').textContent = 
+        `難度：${difficultyNames[difficulty]}`;
+      
+      document.getElementById('message').style.display = 'none';
+      
+      createGrid();
+      startTimer();
+    }
+
+    async function onConfigChange(config) {
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      const baseSize = config.font_size || defaultConfig.font_size;
+      
+      const backgroundColor = config.background_color || defaultConfig.background_color;
+      const surfaceColor = config.surface_color || defaultConfig.surface_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const primaryActionColor = config.primary_action_color || defaultConfig.primary_action_color;
+      const secondaryActionColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+      
+      document.body.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      
+      document.querySelector('.game-wrapper').style.background = 
+        `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}dd 100%)`;
+      document.querySelector('.game-container').style.background = surfaceColor;
+      document.querySelector('h1').style.color = textColor;
+      document.querySelector('h1').style.fontSize = `${baseSize * 3}px`;
+      
+      document.querySelectorAll('.controls select, .controls button, .number-btn').forEach(el => {
+        el.style.fontSize = `${baseSize}px`;
+      });
+      
+      document.querySelector('.timer').style.color = textColor;
+      document.querySelector('.difficulty-display').style.color = textColor;
+      document.querySelector('.timer').style.fontSize = `${baseSize * 1.125}px`;
+      document.querySelector('.difficulty-display').style.fontSize = `${baseSize * 1.125}px`;
+      
+      document.querySelectorAll('.btn-primary').forEach(btn => {
+        btn.style.background = primaryActionColor;
+      });
+      
+      document.querySelectorAll('.btn-secondary').forEach(btn => {
+        btn.style.background = secondaryActionColor;
+      });
+      
+      document.querySelectorAll('.cell').forEach(cell => {
+        cell.style.fontSize = `${baseSize * 1.5}px`;
+      });
+      
+      document.getElementById('game-title').textContent = 
+        config.game_title || defaultConfig.game_title;
+      document.getElementById('new-game-btn').textContent = 
+        config.new_game_button || defaultConfig.new_game_button;
+      document.getElementById('hint-btn').textContent = 
+        config.hint_button || defaultConfig.hint_button;
+      document.getElementById('check-btn').textContent = 
+        config.check_button || defaultConfig.check_button;
+    }
+
+    document.getElementById('new-game-btn').addEventListener('click', newGame);
+    document.getElementById('hint-btn').addEventListener('click', giveHint);
+    document.getElementById('check-btn').addEventListener('click', checkSolution);
+
+    document.querySelectorAll('.number-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const num = parseInt(btn.dataset.number);
+        setNumber(num);
+      });
+    });
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                config.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            },
+            {
+              get: () => config.surface_color || defaultConfig.surface_color,
+              set: (value) => {
+                config.surface_color = value;
+                window.elementSdk.setConfig({ surface_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            },
+            {
+              get: () => config.primary_action_color || defaultConfig.primary_action_color,
+              set: (value) => {
+                config.primary_action_color = value;
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+              set: (value) => {
+                config.secondary_action_color = value;
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["game_title", config.game_title || defaultConfig.game_title],
+          ["new_game_button", config.new_game_button || defaultConfig.new_game_button],
+          ["hint_button", config.hint_button || defaultConfig.hint_button],
+          ["check_button", config.check_button || defaultConfig.check_button]
+        ])
+      });
+    }
+
+    newGame();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a811c7e057077f1',t:'MTc2NDc0NDQzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
